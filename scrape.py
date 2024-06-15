@@ -7,6 +7,23 @@ import datetime
 
 BASE_URL = 'https://api.chess.com/pub/player/'
 MONTHS = [f'{i:02}' for i in range(1, 13)]
+TITLES = ['GM', 'WGM', 'IM', 'WIM', 'FM', 'WFM', 'NM', 'WNM', 'CM', 'WCM']
+
+
+def get_players_restapi(title):
+    # API call to get a list of players by their title
+    headers = {
+        'Accept': 'application/json',
+        'User-Agent': 'Chrome/58.0.3029.110'
+    }
+
+    response = requests.get(
+        f'https://api.chess.com/pub/titled/{title}',
+        headers=headers
+    )
+
+    data = response.json()
+    return data['players']
 
 
 def get_games_restapi(player, year, month):
@@ -67,6 +84,7 @@ def game_to_dict(pgn):
 
 
 def get_all_games(player, start_year, end_year):
+    # This gets all the games for a player between given years
     current_year = datetime.datetime.now().year
     current_month = datetime.datetime.now().strftime('%m')
 
@@ -78,7 +96,10 @@ def get_all_games(player, start_year, end_year):
 
         for month in tqdm(MONTHS):
             # Skip any future months
-            if (year > current_year) or (year == current_year and month > current_month):
+            if (
+                (year > current_year) or
+                (year == current_year and month > current_month)
+            ):
                 continue
 
             # API call to get games for the month/year
@@ -108,6 +129,16 @@ def get_all_games(player, start_year, end_year):
 
 
 if __name__ == '__main__':
-    player = 'networkdirection'
+    player_list = []
 
-    get_all_games(player, 2021, 2025)
+    # Get all titled players (more than 12k players)
+    for title in TITLES:
+        data = get_players_restapi(title)
+        player_list.extend(data)
+
+    print(f'{len(player_list)} titled players found')
+
+    # Get all games for each player
+    for player in player_list:
+        print(f'Getting games for {player}')
+        get_all_games(player, 2010, 2024)
