@@ -23,3 +23,5 @@
 124chess-2013.json
 124chess-2014.json
 124chess-2015.json
+1977ivan-2010.json
+1977ivan-2011.json

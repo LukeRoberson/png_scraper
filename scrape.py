@@ -98,7 +98,6 @@ def get_all_games(player, start_year, end_year):
         # Check if a file already exists for the player and year
         file_path = f'./dumps/{player}-{year}.json'
         if os.path.exists(file_path):
-            print(f'{player}-{year}.json already exists, skipping')
             continue
 
         # Check if we've previously skipped this player/year
@@ -107,7 +106,6 @@ def get_all_games(player, start_year, end_year):
             with open(skip_file, 'r') as file:
                 skipped = file.read().splitlines()
             if f'{player}-{year}.json' in skipped:
-                print(f'{player}-{year}.json was previously skipped, skipping')
                 continue
 
         for month in tqdm(MONTHS):
@@ -129,11 +127,16 @@ def get_all_games(player, start_year, end_year):
 
             # Loop through the games and convert them to a dictionary
             month_dict[year][month] = []
-            for item in games:
-                moves = item['pgn']
-                game_dict = game_to_dict(moves)
+            try:
+                for item in games:
+                    moves = item['pgn']
+                    game_dict = game_to_dict(moves)
 
-                month_dict[year][month].append(game_dict)
+                    month_dict[year][month].append(game_dict)
+            except KeyError:
+                print(f'KeyError getting games for {player}-{year}-{month}')
+                with open('skip.txt', 'a') as file:
+                    file.write(f'{player}-{year}.json\n')
 
         if not month_dict[year]:
             with open('skip.txt', 'a') as file:
