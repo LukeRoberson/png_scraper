@@ -9,7 +9,8 @@ BASE_URL = 'https://api.chess.com/pub/player/'
 MONTHS = [f'{i:02}' for i in range(1, 13)]
 
 
-def get_games(player, year, month):
+def get_games_restapi(player, year, month):
+    # API call to get games for the month/year
     headers = {
         'Accept': 'application/json',
         'User-Agent': 'Chrome/58.0.3029.110'
@@ -21,7 +22,6 @@ def get_games(player, year, month):
     )
 
     data = response.json()
-
     return data['games']
 
 
@@ -66,13 +66,11 @@ def game_to_dict(pgn):
     return game_dict
 
 
-if __name__ == '__main__':
-    player = 'networkdirection'
-    year = '2023'
+def get_all_games(player, start_year, end_year):
     current_year = datetime.datetime.now().year
     current_month = datetime.datetime.now().strftime('%m')
 
-    for year in range(2020, 2025):
+    for year in range(start_year, end_year + 1):
         # Create a dictionary to store the games
         month_dict = {
             year: {}
@@ -80,11 +78,11 @@ if __name__ == '__main__':
 
         for month in tqdm(MONTHS):
             # Skip any future months
-            if year >= current_year and month > current_month:
+            if (year > current_year) or (year == current_year and month > current_month):
                 continue
 
             # API call to get games for the month/year
-            games = get_games(
+            games = get_games_restapi(
                 player=player,
                 year=year,
                 month=month
@@ -107,3 +105,9 @@ if __name__ == '__main__':
         file_path = f'./dumps/{player}-{year}.json'
         with open(file_path, 'w') as file:
             json.dump(month_dict, file)
+
+
+if __name__ == '__main__':
+    player = 'networkdirection'
+
+    get_all_games(player, 2021, 2025)
