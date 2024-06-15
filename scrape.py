@@ -3,6 +3,7 @@ import re
 import json
 from tqdm import tqdm
 import datetime
+import os
 
 
 BASE_URL = 'https://api.chess.com/pub/player/'
@@ -94,6 +95,21 @@ def get_all_games(player, start_year, end_year):
             year: {}
         }
 
+        # Check if a file already exists for the player and year
+        file_path = f'./dumps/{player}-{year}.json'
+        if os.path.exists(file_path):
+            print(f'{player}-{year}.json already exists, skipping')
+            continue
+
+        # Check if we've previously skipped this player/year
+        skip_file = 'skip.txt'
+        if os.path.exists(skip_file):
+            with open(skip_file, 'r') as file:
+                skipped = file.read().splitlines()
+            if f'{player}-{year}.json' in skipped:
+                print(f'{player}-{year}.json was previously skipped, skipping')
+                continue
+
         for month in tqdm(MONTHS):
             # Skip any future months
             if (
@@ -120,6 +136,8 @@ def get_all_games(player, start_year, end_year):
                 month_dict[year][month].append(game_dict)
 
         if not month_dict[year]:
+            with open('skip.txt', 'a') as file:
+                file.write(f'{player}-{year}.json\n')
             continue
 
         # Save game_dict to a JSON file
