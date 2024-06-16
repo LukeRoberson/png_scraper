@@ -4,6 +4,7 @@ import json
 from tqdm import tqdm
 import datetime
 import os
+import time
 
 
 BASE_URL = 'https://api.chess.com/pub/player/'
@@ -34,13 +35,19 @@ def get_games_restapi(player, year, month):
         'User-Agent': 'Chrome/58.0.3029.110'
     }
 
-    response = requests.get(
-        f'{BASE_URL}{player}/games/{year}/{month}',
-        headers=headers
-    )
+    try:
+        response = requests.get(
+            f'{BASE_URL}{player}/games/{year}/{month}',
+            headers=headers
+        )
 
-    data = response.json()
-    return data['games']
+        data = response.json()
+        return data['games']
+
+    except Exception as e:
+        print(f'Error {e} getting games for {player}-{year}-{month}')
+        time.sleep(5)
+        return []
 
 
 def game_to_dict(pgn):
