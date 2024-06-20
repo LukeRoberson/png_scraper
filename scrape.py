@@ -5,6 +5,7 @@ from tqdm import tqdm
 import datetime
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor, wait
 
 
 BASE_URL = 'https://api.chess.com/pub/player/'
@@ -91,7 +92,7 @@ def game_to_dict(pgn):
     return game_dict
 
 
-def get_all_games(player, start_year, end_year):
+def get_all_games(player, start_year=2010, end_year=2024):
     # This gets all the games for a player between given years
     current_year = datetime.datetime.now().year
     current_month = datetime.datetime.now().strftime('%m')
@@ -115,7 +116,9 @@ def get_all_games(player, start_year, end_year):
             if f'{player}-{year}.json' in skipped:
                 continue
 
-        for month in tqdm(MONTHS):
+        pbar = tqdm(MONTHS, colour='green', leave=False)
+        for month in pbar:
+            pbar.set_description(f'Player: {player}, {year}')
             # Skip any future months
             if (
                 (year > current_year) or
@@ -141,7 +144,6 @@ def get_all_games(player, start_year, end_year):
 
                     month_dict[year][month].append(game_dict)
             except KeyError:
-                print(f'KeyError getting games for {player}-{year}-{month}')
                 with open('skip.txt', 'a') as file:
                     file.write(f'{player}-{year}.json\n')
 
@@ -160,13 +162,22 @@ if __name__ == '__main__':
     player_list = []
 
     # Get all titled players (more than 12k players)
-    for title in TITLES:
+    for title in tqdm(TITLES, desc='Getting Titled Players', colour='blue'):
         data = get_players_restapi(title)
         player_list.extend(data)
 
     print(f'{len(player_list)} titled players found')
+    player_list.sort()
 
-    # Get all games for each player
-    for player in player_list:
-        print(f'Getting games for {player}')
-        get_all_games(player, 2010, 2024)
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(
+            tqdm(
+                executor.map(
+                    get_all_games,
+                    player_list
+                ),
+                total=len(player_list),
+                colour='yellow',
+                desc='Total Progress',
+            )
+        )
