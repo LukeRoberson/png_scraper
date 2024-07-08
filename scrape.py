@@ -5,7 +5,7 @@ from tqdm import tqdm
 import datetime
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor
 
 
 BASE_URL = 'https://api.chess.com/pub/player/'
@@ -63,6 +63,10 @@ def game_to_dict(pgn):
     # Cleanup back into a PGN format
     moves = re.sub(r'\d+\.\.\.', '', moves)
     moves = re.sub(r' {2,}', ' ', moves)
+
+    # Remove any '@' symbols which sometimes appear in the moves
+    #   It's unclear what they mean, but they're not needed
+    moves = moves.replace('@', '')
 
     # Split the moves into a list, and extract the result
     result = moves.split(' ')[-1]
@@ -169,7 +173,7 @@ if __name__ == '__main__':
     print(f'{len(player_list)} titled players found')
     player_list.sort()
 
-    with ThreadPoolExecutor(max_workers=8) as executor:
+    with ThreadPoolExecutor(max_workers=12) as executor:
         results = list(
             tqdm(
                 executor.map(
